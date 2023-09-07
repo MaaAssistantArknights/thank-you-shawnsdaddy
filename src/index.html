@@ -2,13 +2,25 @@
 
 <head>
   <meta charset="utf-8">
-  <script type="text/javascript" src="character_table.json"></script>
+  <script type="text/javascript" src="character_table.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   <link rel="stylesheet" href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css" />
-  <title>Thank you Shawnsdaddy!</title>
+  <title>自动战斗流程JSON生成器</title>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
   <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
   <script src="https://code.jquery.com/ui/1.10.4/jquery-ui.js"></script>
+  <style>
+    .actiontitle {
+      font-size: 2rem;
+      line-height: .75em;
+    }
+
+    .tips {
+      font-weight: lighter;
+      font-size: 0.5em;
+      color: gray;
+    }
+  </style>
 
 <body>
   <div class="row" style="margin: 50 50;">
@@ -27,7 +39,7 @@
             <h2 for="description">
               描述
             </h2>
-            <input type="text" class="form-control" id="description" />
+            <textarea type="text" class="form-control" id="description"></textarea>
           </div>
         </div>
         <div class="col-sm-3">
@@ -35,7 +47,7 @@
             <h2 for="title">
               标题
             </h2>
-            <input type="text" class="form-control" id="title" />
+            <textarea type="text" class="form-control" id="title"></textarea>
           </div>
         </div>
         <div class="col-sm-3">
@@ -47,7 +59,7 @@
     </div>
     <div class="col-4">
       <div class="row">
-        <div class="col-sm-6">
+        <div class="col-sm-12">
           <h2>选择干员</h2>
         </div>
       </div>
@@ -109,9 +121,9 @@
     </div>
     <div class="col-8">
       <div class="row">
-        <div class="col-sm-6">
-          <h2>战斗流程</h2>
-        </div>
+        <div class="col-sm-12">
+          <p class="actiontitle">战斗流程     <span class="tips">小贴士：可以拖拽更改顺序</span></p>          
+        </div>        
       </div>
       <div class="row">
         <div class="col-sm-11">
@@ -125,8 +137,10 @@
                 <th>x坐标</th>
                 <th>y坐标</th>
                 <th>方向</th>
-                <th>操作前延迟(毫秒)</th>
-                <th>操作后延迟(毫秒)</th>
+                <th>前延迟</th>
+                <th>后延迟</th>
+                <th>文本</th>
+                <th>颜色</th>
                 <th>删除</th>
               </tr>
             </thead>
@@ -138,7 +152,7 @@
           <div class="panel panel-primary">
             <div class="panel-body">
               <div class="row">
-                <div class="form-group col-sm-3">
+                <div class="form-group col-sm-2">
                   <label for="type">
                     类别
                   </label>
@@ -164,15 +178,21 @@
                   <input type="text" id="operator" class="form-control">
                   </select>
                 </div>
-                <div class="form-group col-sm-3">
+                <div class="form-group col-sm-2">
                   <label for="xcoordinate">
                     x坐标
                   </label>
                   <input type="number" class="form-control" id="xcoordinate" />
                 </div>
+                <div class="form-group col-sm-2">
+                  <label for="ycoordinate">
+                    y坐标
+                  </label>
+                  <input type="number" class="form-control" id="ycoordinate" />
+                </div>
               </div>
               <div class="row">
-                <div class="form-group col-sm-3">
+                <div class="form-group col-sm-2">
                   <label for="direction">
                     方向
                   </label>
@@ -196,11 +216,17 @@
                   </label>
                   <input type="number" class="form-control" id="rear_delay" />
                 </div>
-                <div class="form-group col-sm-3">
-                  <label for="ycoordinate">
-                    y坐标
+                <div class="form-group col-sm-2">
+                  <label for="doc_color">
+                    颜色
                   </label>
-                  <input type="number" class="form-control" id="ycoordinate" />
+                  <input type="text" class="form-control" id="doc_color" />
+                </div>
+                <div class="form-group col-sm-2">
+                  <label for="doc">
+                    文本
+                  </label>
+                  <input type="text" class="form-control" id="doc" />
                 </div>
               </div>
             </div>
@@ -256,6 +282,8 @@
         $("#direction").val($(cols[6]).text())
         $("#pre_delay").val($(cols[7]).text())
         $("#rear_delay").val($(cols[8]).text())
+        $("#doc").val($(cols[9]).text())
+        $("#doc_color").val($(cols[10]).text())
         $("#updateActionButton").text("Update");
         document.getElementById("type").scrollIntoView();
       }
@@ -294,7 +322,12 @@
       }
       else if (type === 'action') {
         if ($("#actionTable tbody").length == 0) $("#actionTable").append("<tbody></tbody>");
-        $("#actionTable tbody").append(buildTableRow(type, data))
+        let indexVal = parseInt($("#insertindex").val())
+        if (indexVal >= 0 && indexVal <= $("#actionTable tbody tr").length) {
+          var newRow = $(buildTableRow(type, data));
+          newRow.insertBefore($('#actionTable tbody tr:nth(' + indexVal + ')'));
+        }
+        else $("#actionTable tbody").append(buildTableRow(type, data))
       }
     }
 
@@ -329,13 +362,11 @@
             obj.skill = data.skill;
             obj.skill_usage = (data.skill_usage ? data.skill_usage : 0);
           }
-          //如果重复则忽略
-          if (operatorList.findIndex(x => x.value == obj.name) > -1) return;
           datastring = "<td>" + obj.name + "</td>" +
             "<td>" + obj.skill + "</td>" +
             "<td>" + (obj.skill_usage ? obj.skill_usage : 0) + "</td>";
           var ret =
-            "<tr>" +
+            "<tr draggable='true' ondragstart='start()'  ondragover='dragover()'>" +
             "<td>" +
             "<button type='button' name =\"edit" + (data && data.name ? data.name : $("#operatorname").val()) + "\"" +
             "onclick='display(this,\"operator\");' " +
@@ -364,7 +395,9 @@
             "<td>" + (data.location ? data.location[1] : "") + "</td>" +
             "<td>" + (data.direction ? data.direction : "") + "</td>" +
             "<td>" + (data.pre_delay ? data.pre_delay : "") + "</td>" +
-            "<td>" + (data.rear_delay ? data.rear_delay : "") + "</td>";
+            "<td>" + (data.rear_delay ? data.rear_delay : "") + "</td>" +
+            "<td>" + (data.doc ? data.doc : "") + "</td>" +
+            "<td>" + (data.doc_color ? data.doc_color : "") + "</td>";
         }
         else {
           datastring = "<td>" + $("#type").val() + "</td>" +
@@ -374,11 +407,12 @@
             "<td>" + $("#ycoordinate").val() + "</td>" +
             "<td>" + $("#direction").val() + "</td>" +
             "<td>" + $("#pre_delay").val() + "</td>" +
-            "<td>" + $("#rear_delay").val() + "</td>";
+            "<td>" + $("#rear_delay").val() + "</td>" +
+            "<td>" + $("#doc").val() + "</td>" +
+            "<td>" + $("#doc_color").val() + "</td>";
         }
-
         var ret =
-          "<tr>" +
+          "<tr draggable='true' ondragstart='start()'  ondragover='dragover()'>" +
           "<td>" +
           "<button type='button' " +
           "onclick='display(this,\"action\");' " +
@@ -449,6 +483,8 @@
         $("#direction").val("");
         $("#pre_delay").val("");
         $("#rear_delay").val("");
+        $("#doc").val("");
+        $("#doc_color").val("");
       }
     }
     function prepareActionData(tr) {
@@ -460,19 +496,21 @@
         ycoordinate = $tds.eq(5).text(),
         direction = $tds.eq(6).text(),
         pre_delay = $tds.eq(7).text(),
-        rear_delay = $tds.eq(8).text();
+        rear_delay = $tds.eq(8).text(),
+        doc = $tds.eq(9).text(),
+        doc_color = $tds.eq(10).text();
       kills = parseInt(kills)
       pre_delay = parseInt(pre_delay)
       rear_delay = parseInt(rear_delay)
       xcoordinate = parseInt(xcoordinate)
       ycoordinate = parseInt(ycoordinate)
       let location = [xcoordinate, ycoordinate]
-      var actionData = { type, kills, name, location, direction, pre_delay, rear_delay };
+      var actionData = { type, kills, name, location, direction, pre_delay, rear_delay, doc, doc_color };
       if (isNaN(actionData.kills)) delete actionData.kills;
       if (isNaN(actionData.pre_delay)) delete actionData.pre_delay;
       if (isNaN(actionData.rear_delay)) delete actionData.rear_delay;
       if (actionData.direction === "") delete actionData.direction;
-      if (isNaN(actionData.location.xcoordinate) || isNaN(actionData.location.ycoordinate)) delete actionData.location;
+      if (isNaN(actionData.location[0]) || isNaN(actionData.location[1])) delete actionData.location;
       return actionData;
     }
     function toJSON() {
@@ -487,6 +525,7 @@
           skill_usage = $tds.eq(3).text();
         if (name && skill && skill_usage) {
           skill_usage = parseInt(skill_usage)
+          skill = parseInt(skill)
           opers.push({ name, skill, skill_usage });
         }
       });
@@ -498,8 +537,10 @@
       var title = document.getElementById("title").value;
       var details = document.getElementById("description").value;
       var doc = { title, details };
-      var obj = { stage_name, opers, actions, doc };
-      var file = new Blob([JSON.stringify(obj)], { type: 'text/plain' });
+      var obj = { "minimum_required": "v4.0", doc, stage_name, opers, actions };
+      var jsonString = JSON.stringify(obj);
+      var jsonPretty = JSON.stringify(JSON.parse(jsonString), null, 4);
+      var file = new Blob([jsonPretty], { type: 'text/plain' });
       var fileName = obj.stage_name + '_' + opers.map(o => o.name).join('+') + '.json';
       const url = window.URL.createObjectURL(file);
       const link = document.createElement('a');
@@ -523,12 +564,29 @@
             $("#operatorTable tbody tr").remove();
             updateOperatorList("clean", "")
             if (data.opers) data.opers.forEach(x => { addToTable("operator", x); updateOperatorList("add", x.name); });
+            $("#insertindex").val(-1)
             $("#actionTable tbody tr").remove();
-            if (data.actions) data.actions.forEach(x => addToTable("action", x));
+            if (data.actions) data.actions.forEach(x => { addToTable("action", x) });
           }
         };
       })(f);
       reader.readAsText(f);
+    }
+    var row;
+
+    function start() {
+      row = event.target;
+    }
+    function dragover() {
+      var e = event;
+      e.preventDefault();
+
+      let children = Array.from(e.target.parentNode.parentNode.children);
+
+      if (children.indexOf(e.target.parentNode) > children.indexOf(row))
+        e.target.parentNode.after(row);
+      else
+        e.target.parentNode.before(row);
     }
     document.getElementById('selectedFile').addEventListener('change', handleFileSelect, false);
   </script>
