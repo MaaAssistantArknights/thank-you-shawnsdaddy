@@ -1,4 +1,4 @@
-let charName = ["Lancet-2",
+const charName = ["Lancet-2",
 "Castle-3",
 "THRM-EX",
 "正义骑士号",
